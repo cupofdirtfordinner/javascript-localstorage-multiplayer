@@ -1,0 +1,142 @@
+<head>
+<style>
+body {
+  background-color: black;
+  color: #ff2146;
+  font-family: monospace;
+  font-size: 1.1em;
+}
+#div {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  left: 0;
+  top: 0;
+}
+.playerDiv {
+  background-color: cyan;
+  width: 30px;
+  height: 30px;
+  position: absolute;
+}
+#debug {
+  color: white;
+  width: 30vw;
+  height: 100vh;
+  position: absolute;
+  left: 70vw;
+  top: 0;
+  background-color: rgba(0,0,0,0.2);
+  text-wrap: wrap;
+  overflow: scroll;
+}
+</style>
+</head>
+<body>
+
+<div id="frame"></div>
+<button onclick="localStorage.clear()">clear</button>
+<span class="testspan"></span><br>
+<span class="testspan"></span><br>
+open multiple tabs of this and put them side by side <br>
+dont do it on a garbage tier cpu though, it'll lag <br>
+
+<div id="debug"></div>
+
+<script>
+var canvas = document.getElementById("frame")
+var spans = document.querySelectorAll(".testspan")
+
+var pressedKeys = {};
+window.onkeyup = function(e) { pressedKeys[e.keyCode] = false; }
+window.onkeydown = function(e) { pressedKeys[e.keyCode] = true; }
+
+//init
+var x = 0
+var y = 0
+var velx = 0
+var vely = 0
+const speed = .05
+
+var playerID = 0
+var amIactive = 1
+var localAmIactiveRecord = []
+var localAmIactiveRecord2 = []
+var localAmIactiveRecord3 = []
+
+//server init
+if (!localStorage.getItem("players")) { //if players doesnt exist in storage
+  localStorage.setItem("players", 1) //create it (and set it to 1, because I am playing)
+  playerID = 1
+} else {
+  playerID = parseInt(localStorage.getItem("players")) + 1
+  localStorage.setItem("players", parseInt(localStorage.getItem("players")) + 1)
+}
+
+setInterval(serverdownload,10)
+setInterval(localphysics,1)
+setInterval(draw,2)
+setInterval(serverupload,2)
+
+
+function serverdownload() {
+  spans[0].textContent = "player count: "+localStorage.getItem("players")
+  spans[1].textContent = "ID: " + playerID
+  document.getElementById("debug").innerHTML = JSON.stringify(localStorage).replaceAll(",", "\n")
+}
+////
+function localphysics() {
+  //controls
+  if (pressedKeys[87]) {vely += speed} //W
+  if (pressedKeys[65]) {velx -= speed} //A
+  if (pressedKeys[83]) {vely -= speed} //S
+  if (pressedKeys[68]) {velx += speed} //D
+  
+  x += velx
+  y += vely
+  velx /= 1.02
+  vely /= 1.02 //just makes it fun to move around. sue me
+}
+////
+function draw() {
+  frame.innerHTML = ''
+  for (let i = 1; i <= parseInt(localStorage.getItem("players")); i++) {
+    //check if player still has the tab open
+    if (localAmIactiveRecord[i] == localStorage.getItem("is"+i+"active")) {
+      
+    }
+    
+    //add players
+    var playerDiv = document.createElement("div")
+    playerDiv.classList.add("playerDiv")
+    if (i == playerID) {
+      playerDiv.style.bottom = y
+      playerDiv.style.left = x
+    } else {
+      playerDiv.style.bottom = localStorage.getItem("p"+i+"y")
+      playerDiv.style.left = localStorage.getItem("p"+i+"x")
+    }
+    if (localAmIactiveRecord[i] == localStorage.getItem("is"+i+"active")) {
+      playerDiv.style.backgroundColor = "red"
+    }
+    canvas.appendChild(playerDiv)
+    
+    //saving everyone's current active value to check at the start of the next frame
+    localAmIactiveRecord[i] = localStorage.getItem("is"+i+"active")
+  }
+}
+
+////
+
+function serverupload() {
+  localStorage.setItem("p"+playerID+"x", x)
+  localStorage.setItem("p"+playerID+"y", y)
+  
+  const now = new Date()
+  localStorage.setItem("is"+playerID+"active", amIactive)
+  amIactive = Math.sin(now.getMilliseconds()) //this happens every frame to prove the tab is still open
+}
+
+
+</script>
+</body>
